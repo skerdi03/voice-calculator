@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Diploma Master</title>
+<style>
+    body{
+        background-color: #cacec9!important;
+    }
+    .centerdiv{
+        display: flex;
+        justify-content: center;
+        margin-top: 10%;
+    }
+    #text{
+        font-size: 25px;
+        font-weight: bold;
+    }
+    #btnstart i{
+        font-size: 50px;
+    }
+    .speakBtn i{
+        font-size: 30px;
+    }
+    #instruction{
+        margin-left: 5%;
+        position: fixed;
+        bottom: 2%;
+    }
+
+   
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+<script src="https://kit.fontawesome.com/a076d05399.js"></script>
+<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+<script>
+    window.SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+
+    const recognition = new window.SpeechRecognition();
+
+    var synth = window.speechSynthesis;
+
+    recognition.onresult = (event) => {
+        var speechToText = event.results[0][0].transcript;
+        if(recognition.lang == 'sq'){
+            speechToText = speechToText.replace(/plus/g, '+');
+            speechToText = speechToText.replace(/minus/g, '-');
+            speechToText = speechToText.replace(/shumëzim/g, 'x');
+            speechToText = speechToText.replace(/pjestim/g, '/');
+        }
+        var result =  calculate(speechToText);
+        document.getElementById("text").textContent = speechToText + ' = ' + result;
+        $('#btnstart').blur();
+    }
+    function start(){
+        document.getElementById("text").textContent = '';
+        recognition.start();
+    }
+    function calculate(string){
+        var result = 0;
+        var operator = null;
+        var isStrchange = false;
+        var numbers = string.split(" ");
+        numbers.forEach(function(el, i){
+            if (el == ' ') return;
+            var curr = Number(el);
+            if(isNaN(curr)){
+                operator = el;
+            }else{
+                if (i == 0){
+                    result = curr;
+                } else{
+                    if(operator == '+'){
+                        result += curr;
+                    }else if(operator == '-'){
+                        result -= curr;
+                    }else if(operator == 'x'){
+                        var next = numbers[i];
+                        var previous = numbers [i-2];
+                        var sum = next * previous;
+                        string = string.replace(previous.toString() + ' x ' + next.toString(), sum);
+                        isStrchange = true;
+                    } else if(operator == '/'){
+                        var next = numbers[i];
+                        var previous = numbers [i-2];
+                        var sum = previous / next;
+                        string = string.replace(previous.toString() + ' / ' + next.toString(), sum);
+                        isStrchange = true;
+                    }
+                }
+            }
+        });
+        if(!isStrchange) return result;
+        return calculate(string);
+    }
+    
+    function textToSpeech() {
+        // get all voices that browser offers
+        var available_voices = window.speechSynthesis.getVoices();
+
+        // this will hold an english voice
+        var english_voice = '';
+
+        // find voice by language locale "en-US"
+        // if not then select the first voice
+        for(var i=0; i<available_voices.length; i++) {
+            if(available_voices[i].lang === 'en-US') {
+                english_voice = available_voices[i];
+                break;
+            }
+        }
+        if(english_voice === '')
+            english_voice = available_voices[0];
+
+        // new SpeechSynthesisUtterance object
+        var utter = new SpeechSynthesisUtterance();
+        utter.rate = 1;
+        utter.pitch = 0.5;
+        utter.text = document.getElementById('text').textContent;
+        if(utter.text == ''){
+            utter.text = 'Please Tap Start Voice to perform mathematical function';
+        }
+        utter.voice = english_voice;
+
+        // speak
+        window.speechSynthesis.speak(utter);
+    }
+    function startSpeak(){
+
+        if(window.speechSynthesis.getVoices().length == 0) {
+            window.speechSynthesis.addEventListener('voiceschanged', function() {
+                textToSpeech();
+            });
+        }
+        else {
+            // languages list available, no need to wait
+            textToSpeech()
+        }
+    }
+    
+</script>
+</head>
+<body>
+    <div class="row" style="margin: 1%;">
+        <div class="col-7" id="speakDiv">
+            <button class="btn speakBtn" onclick="startSpeak();"><i class="fas fa-volume-up"></i></button>
+        </div>
+
+        <div class="col-5" id="languagesDiv">
+            <select id="languages" class="form-control">
+                <option value="en">English</option>
+                <option value="sq">Albanian</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="centerdiv">
+        <button type="button" id="btnstart"class="btn btn-dark centerbtn" onclick="start()"><i class="fas fa-microphone">  Start Voice</i></button>
+    </div>
+    <div class="centerdiv">
+        <p id="text"></p>
+    </div>
+    <div id="instruction">
+        <p>Step 1: <b>Tap Start Voice</b> to perform mathematical function.
+        <br>To perform addition(+) <b>use word "plus"</b>. For e.g speak "Five plus three". 
+        <br>To perform substraction(-) <b>use word "minus"</b>. For e.g speak "Thirteen minus ten". 
+        <br>To perform multiplication(*) <b>use word "multiplied by"</b>. For e.g speak "Seven multiplied by ten". 
+        <br>To perform division(/) <b>use word "divided by"</b>. For e.g speak "Twenty-five divided by five".</p>
+    </div>
+
+  <script>
+        $( "#languages" ).change(function() {
+            recognition.lang = this.value;
+            document.getElementById('instruction').textContent = '';
+            document.getElementById('instruction'). insertAdjacentHTML( 'beforeend', obj[this.value] );
+        });
+        var obj = {
+            'en':'<p>Step 1: <b>Tap Start Voice</b> to perform mathematical function.<br>To perform addition(+) <b>use word "plus"</b>. For e.g speak "Five plus three". <br>To perform substraction(-) <b>use word "minus"</b>. For e.g speak "Thirteen minus ten". <br>To perform multiplication(*) <b>use word "multiplied by"</b>. For e.g speak "Seven multiplied by ten". <br>To perform division(/) <b>use word "divided by"</b>. For e.g speak "Twenty-five divided by five".</p>',
+            'sq':'<p>Hapi 1: <b>Shtyp Start Voice</b> per te kryer veprime matematikore.<br>Per te kryer mbledhje(+) <b>perdor fjalen "plus"</b>. psh. "tre plus tre". <br>Per te kryer zbritje(-) <b>perdor fjalen "minus"</b>. psh. "Trembedhjete minus tre". <br>Per te kryer shumezim(*) <b>perdor fjalen "shumezim per"</b>. psh. "tre shumezim per tre". <br>Per te kryer pjestim(/) <b>perdor fjalen "pjestim per"</b>. psh "tre pjestim per tre".</p>'
+        }
+  </script>
+
+</body>
+</html>
